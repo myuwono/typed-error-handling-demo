@@ -8,7 +8,6 @@ import arrow.core.raise.ensure
 import arrow.core.raise.recover
 import java.time.LocalDate
 
-
 class ContextReceiversPetService(
   private val microchipStore: MicrochipStore,
   private val petStore: PetStore,
@@ -28,6 +27,8 @@ class ContextReceiversPetService(
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
+    petUpdate.name.onSome { checkNamePolicy(it) }
+
     return recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
       when (updatePetFailure) {
         UpdatePetFailure.IllegalUpdate -> raise(UpdatePetDetailsFailure.InvalidUpdate)
@@ -36,10 +37,14 @@ class ContextReceiversPetService(
     }
   }
 
+  context(Raise<UpdatePetDetailsFailure.InvalidUpdate>)
+  private fun checkNamePolicy(name: String): Unit = ensure(name.isNotBlank()) {
+    UpdatePetDetailsFailure.InvalidUpdate
+  }
 
   interface MicrochipStore {
     context(Raise<None>)
-    suspend fun getMicrochip(microchipId: MicrochipId): MicrochipData
+    suspend fun getMicrochip(microchipId: MicrochipId): Microchip
   }
 
   interface PetOwnerStore {

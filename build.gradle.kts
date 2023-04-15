@@ -3,7 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 plugins {
   kotlin("jvm") version "1.8.20"
   id("org.sonarqube") version "4.0.0.2929"
-
+  id("org.jlleitschuh.gradle.ktlint") version "11.3.1"
   application
 }
 

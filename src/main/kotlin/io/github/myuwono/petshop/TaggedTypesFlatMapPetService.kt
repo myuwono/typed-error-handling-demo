@@ -2,13 +2,14 @@ package io.github.myuwono.petshop
 
 import arrow.core.Either
 import arrow.core.Option
+import arrow.core.flatMap
 import arrow.core.getOrElse
+import arrow.core.left
 import arrow.core.none
-import arrow.core.raise.either
-import arrow.core.raise.ensure
+import arrow.core.right
 import java.time.LocalDate
 
-class TaggedTypesPetService(
+class TaggedTypesFlatMapPetService(
   private val microchipStore: MicrochipStore,
   private val petStore: PetStore,
   private val petOwnerStore: PetOwnerStore
@@ -17,32 +18,33 @@ class TaggedTypesPetService(
     petId: PetId,
     petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
-  ): Either<UpdatePetDetailsFailure, Pet> = either {
-    val pet = petStore.getPet(petId).getOrElse { raise(UpdatePetDetailsFailure.PetNotFound) }
-
-    val owner = petOwnerStore.getPetOwner(petOwnerId).getOrElse { raise(UpdatePetDetailsFailure.OwnerNotFound) }
-    val microchip = microchipStore.getMicrochip(pet.microchipId).getOrElse { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
-
-    ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
-    ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
-
-    petUpdate.name.onSome { checkNamePolicy(it).bind() }
-
-    petStore.updatePet(pet.id, petUpdate)
-      .mapLeft { updatePetFailure ->
-        when (updatePetFailure) {
-          UpdatePetFailure.IllegalUpdate -> UpdatePetDetailsFailure.InvalidUpdate
-          UpdatePetFailure.NotFound -> UpdatePetDetailsFailure.PetNotFound
-        }
+  ): Either<UpdatePetDetailsFailure, Pet> =
+    petStore.getPet(petId)
+      .toEither { UpdatePetDetailsFailure.PetNotFound }
+      .flatMap { pet ->
+        petOwnerStore.getPetOwner(petOwnerId)
+          .toEither { UpdatePetDetailsFailure.OwnerNotFound }
+          .flatMap { owner ->
+            microchipStore.getMicrochip(pet.microchipId)
+              .toEither { UpdatePetDetailsFailure.MicrochipNotFound }
+              .flatMap { microchip ->
+                run { if (microchip.petId == pet.id) Unit.right() else UpdatePetDetailsFailure.InvalidMicrochip.left() }
+                  .flatMap { if (microchip.petOwnerId == owner.id) Unit.right() else UpdatePetDetailsFailure.OwnerMismatch.left() }
+                  .flatMap { petUpdate.name.map { checkNamePolicy(it) }.getOrElse { Unit.right() } }
+                  .flatMap {
+                    petStore.updatePet(pet.id, petUpdate).mapLeft { updatePetFailure ->
+                      when (updatePetFailure) {
+                        UpdatePetFailure.IllegalUpdate -> UpdatePetDetailsFailure.InvalidUpdate
+                        UpdatePetFailure.NotFound -> UpdatePetDetailsFailure.PetNotFound
+                      }
+                    }
+                  }
+              }
+          }
       }
-      .bind()
-  }
 
-  private fun checkNamePolicy(name: String): Either<UpdatePetDetailsFailure, Unit> = either {
-    ensure(name.isNotBlank()) {
-      UpdatePetDetailsFailure.InvalidUpdate
-    }
-  }
+  private fun checkNamePolicy(name: String): Either<UpdatePetDetailsFailure.InvalidUpdate, Unit> =
+    if (name.isNotBlank()) Unit.right() else UpdatePetDetailsFailure.InvalidUpdate.left()
 
   interface MicrochipStore {
     suspend fun getMicrochip(microchipId: MicrochipId): Option<Microchip>
