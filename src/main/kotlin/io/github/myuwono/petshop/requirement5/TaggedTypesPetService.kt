@@ -27,7 +27,6 @@ class TaggedTypesPetService(
     petUpdate: PetUpdate
   ): Either<UpdatePetDetailsFailure, Pet> = either {
     val pet = petStore.getPet(petId).getOrElse { raise(UpdatePetDetailsFailure.PetNotFound) }
-
     val owner = petOwnerStore.getPetOwner(petOwnerId).getOrElse { raise(UpdatePetDetailsFailure.OwnerNotFound) }
     val microchip = microchipStore.getMicrochip(pet.microchipId).getOrElse { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
 
