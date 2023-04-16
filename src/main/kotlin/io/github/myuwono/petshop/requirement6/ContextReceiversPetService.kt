@@ -5,6 +5,7 @@ import arrow.core.Option
 import arrow.core.none
 import arrow.core.raise.Raise
 import arrow.core.raise.ensure
+import arrow.core.raise.recover
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
 import io.github.myuwono.petshop.Pet
@@ -27,18 +28,16 @@ class ContextReceiversPetService(
     petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
   ): Pet {
-    val pet = arrow.core.raise.recover({ petStore.getPet(petId) }) { raise(UpdatePetDetailsFailure.PetNotFound) }
-    val owner =
-      arrow.core.raise.recover({ petOwnerStore.getPetOwner(petOwnerId) }) { raise(UpdatePetDetailsFailure.OwnerNotFound) }
-    val microchip =
-      arrow.core.raise.recover({ microchipStore.getMicrochip(pet.microchipId) }) { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
+    val pet = recover({ petStore.getPet(petId) }) { raise(UpdatePetDetailsFailure.PetNotFound) }
+    val owner = recover({ petOwnerStore.getPetOwner(petOwnerId) }) { raise(UpdatePetDetailsFailure.OwnerNotFound) }
+    val microchip = recover({ microchipStore.getMicrochip(pet.microchipId) }) { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
     petUpdate.name.onSome { checkNamePolicy(it) }
 
-    return arrow.core.raise.recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
+    return recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
       when (updatePetFailure) {
         UpdatePetFailure.IllegalUpdate -> raise(UpdatePetDetailsFailure.InvalidUpdate)
         UpdatePetFailure.NotFound -> raise(UpdatePetDetailsFailure.PetNotFound)
