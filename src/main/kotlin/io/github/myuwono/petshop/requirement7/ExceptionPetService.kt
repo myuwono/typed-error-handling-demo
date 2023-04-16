@@ -51,7 +51,7 @@ class ExceptionPetService(
     }
   }
 
-  private fun checkNamePolicy(name: String): Unit = Unit
+  private fun checkNamePolicy(name: String): Unit = if (name.isNotBlank()) Unit else throw CheckNameFailedException()
 
   data class CheckNameFailedException(override val cause: Throwable? = null) : RuntimeException()
 
