@@ -30,7 +30,6 @@ class ContextReceiversPetService(
     val microchip = microchipStore.getMicrochip(pet.microchipId) ?: raise(UpdatePetDetailsFailure.MicrochipNotFound)
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
-    ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
     return recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
       when (updatePetFailure) {
@@ -74,7 +73,6 @@ class ContextReceiversPetService(
     object PetNotFound : UpdatePetDetailsFailure()
     object MicrochipNotFound : UpdatePetDetailsFailure()
     object InvalidMicrochip : UpdatePetDetailsFailure()
-    object OwnerMismatch : UpdatePetDetailsFailure()
     object InvalidUpdate : UpdatePetDetailsFailure()
   }
 }

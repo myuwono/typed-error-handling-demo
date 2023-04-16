@@ -3,7 +3,6 @@ package io.github.myuwono.petshop.requirement6
 import arrow.core.Either
 import arrow.core.Option
 import arrow.core.flatMap
-import arrow.core.getOrElse
 import arrow.core.left
 import arrow.core.none
 import arrow.core.right
@@ -38,7 +37,6 @@ class TaggedTypesFlatMapPetService(
               .flatMap { microchip ->
                 run { if (microchip.petId == pet.id) Unit.right() else UpdatePetDetailsFailure.InvalidMicrochip.left() }
                   .flatMap { if (microchip.petOwnerId == owner.id) Unit.right() else UpdatePetDetailsFailure.OwnerMismatch.left() }
-                  .flatMap { petUpdate.name.map { checkNamePolicy(it) }.getOrElse { Unit.right() } }
                   .flatMap {
                     petStore.updatePet(pet.id, petUpdate).mapLeft { updatePetFailure ->
                       when (updatePetFailure) {
@@ -50,9 +48,6 @@ class TaggedTypesFlatMapPetService(
               }
           }
       }
-
-  private fun checkNamePolicy(name: String): Either<UpdatePetDetailsFailure.InvalidUpdate, Unit> =
-    if (name.isNotBlank()) Unit.right() else UpdatePetDetailsFailure.InvalidUpdate.left()
 
   interface MicrochipStore {
     suspend fun getMicrochip(microchipId: MicrochipId): Option<Microchip>

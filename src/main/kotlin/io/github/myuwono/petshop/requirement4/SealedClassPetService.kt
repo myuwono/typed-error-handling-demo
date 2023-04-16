@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement6
+package io.github.myuwono.petshop.requirement4
 
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
@@ -17,33 +17,23 @@ class SealedClassPetService(
 ) {
   suspend fun updatePetDetails(
     petId: PetId,
-    petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
   ): UpdatePetDetailsResult {
     val pet = petStore.getPet(petId)
     return if (pet == null) {
       UpdatePetDetailsResult.PetNotFound
     } else {
-      val owner = petOwnerStore.getPetOwner(petOwnerId)
-      if (owner == null) {
-        UpdatePetDetailsResult.OwnerNotFound
+      val microchip = microchipStore.getMicrochip(pet.microchipId)
+      if (microchip == null) {
+        UpdatePetDetailsResult.MicrochipNotFound
       } else {
-        val microchip = microchipStore.getMicrochip(pet.microchipId)
-        if (microchip == null) {
-          UpdatePetDetailsResult.MicrochipNotFound
+        if (microchip.petId != pet.id) {
+          UpdatePetDetailsResult.InvalidMicrochip
         } else {
-          if (microchip.petId != pet.id) {
-            UpdatePetDetailsResult.InvalidMicrochip
-          } else {
-            if (microchip.petOwnerId != owner.id) {
-              UpdatePetDetailsResult.OwnerMismatch
-            } else {
-              when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
-                UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
-                UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
-                is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
-              }
-            }
+          when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
+            UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
+            UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
+            is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
           }
         }
       }
@@ -52,11 +42,9 @@ class SealedClassPetService(
 
   sealed class UpdatePetDetailsResult {
     data class Success(val pet: Pet) : UpdatePetDetailsResult()
-    object OwnerNotFound : UpdatePetDetailsResult()
     object PetNotFound : UpdatePetDetailsResult()
     object MicrochipNotFound : UpdatePetDetailsResult()
     object InvalidMicrochip : UpdatePetDetailsResult()
-    object OwnerMismatch : UpdatePetDetailsResult()
     object InvalidUpdate : UpdatePetDetailsResult()
   }
 

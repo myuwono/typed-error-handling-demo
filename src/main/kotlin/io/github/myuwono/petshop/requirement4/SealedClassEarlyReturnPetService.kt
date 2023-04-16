@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement6
+package io.github.myuwono.petshop.requirement4
 
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
@@ -10,7 +10,7 @@ import io.github.myuwono.petshop.PetOwnerId
 import io.github.myuwono.petshop.PetType
 import java.time.LocalDate
 
-class SealedClassPetService(
+class SealedClassEarlyReturnPetService(
   private val microchipStore: MicrochipStore,
   private val petStore: PetStore,
   private val petOwnerStore: PetOwnerStore
@@ -20,33 +20,18 @@ class SealedClassPetService(
     petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
   ): UpdatePetDetailsResult {
-    val pet = petStore.getPet(petId)
-    return if (pet == null) {
-      UpdatePetDetailsResult.PetNotFound
-    } else {
-      val owner = petOwnerStore.getPetOwner(petOwnerId)
-      if (owner == null) {
-        UpdatePetDetailsResult.OwnerNotFound
-      } else {
-        val microchip = microchipStore.getMicrochip(pet.microchipId)
-        if (microchip == null) {
-          UpdatePetDetailsResult.MicrochipNotFound
-        } else {
-          if (microchip.petId != pet.id) {
-            UpdatePetDetailsResult.InvalidMicrochip
-          } else {
-            if (microchip.petOwnerId != owner.id) {
-              UpdatePetDetailsResult.OwnerMismatch
-            } else {
-              when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
-                UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
-                UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
-                is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
-              }
-            }
-          }
-        }
-      }
+    val pet = petStore.getPet(petId) ?: return UpdatePetDetailsResult.PetNotFound
+    val owner = petOwnerStore.getPetOwner(petOwnerId) ?: return UpdatePetDetailsResult.OwnerNotFound
+    val microchip = microchipStore.getMicrochip(pet.microchipId) ?: return UpdatePetDetailsResult.MicrochipNotFound
+
+    if (microchip.petId != pet.id) {
+      return UpdatePetDetailsResult.InvalidMicrochip
+    }
+
+    return when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
+      UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
+      UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
+      is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
     }
   }
 
@@ -56,7 +41,6 @@ class SealedClassPetService(
     object PetNotFound : UpdatePetDetailsResult()
     object MicrochipNotFound : UpdatePetDetailsResult()
     object InvalidMicrochip : UpdatePetDetailsResult()
-    object OwnerMismatch : UpdatePetDetailsResult()
     object InvalidUpdate : UpdatePetDetailsResult()
   }
 

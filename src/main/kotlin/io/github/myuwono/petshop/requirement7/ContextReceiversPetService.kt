@@ -1,7 +1,6 @@
-package io.github.myuwono.petshop.requirement5
+package io.github.myuwono.petshop.requirement7
 
-import arrow.core.Either
-import arrow.core.raise.either
+import arrow.core.raise.Raise
 import arrow.core.raise.ensure
 import arrow.core.raise.recover
 import io.github.myuwono.petshop.Microchip
@@ -14,28 +13,38 @@ import io.github.myuwono.petshop.PetOwnerId
 import io.github.myuwono.petshop.PetType
 import java.time.LocalDate
 
-class TaggedTypesPetService(
+class ContextReceiversPetService(
   private val microchipStore: MicrochipStore,
   private val petStore: PetStore,
   private val petOwnerStore: PetOwnerStore
 ) {
+
+  context(Raise<UpdatePetDetailsFailure>)
   suspend fun updatePetDetails(
     petId: PetId,
     petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
-  ): Either<UpdatePetDetailsFailure, Pet> = either {
+  ): Pet {
     val pet = petStore.getPet(petId) ?: raise(UpdatePetDetailsFailure.PetNotFound)
     val owner = petOwnerStore.getPetOwner(petOwnerId) ?: raise(UpdatePetDetailsFailure.OwnerNotFound)
     val microchip = microchipStore.getMicrochip(pet.microchipId) ?: raise(UpdatePetDetailsFailure.MicrochipNotFound)
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
+    ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
-    recover({ petStore.updatePet(pet.id, petUpdate).bind() }) { updatePetFailure ->
+    petUpdate.name?.let { checkNamePolicy(it) }
+
+    return recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
       when (updatePetFailure) {
         UpdatePetFailure.IllegalUpdate -> raise(UpdatePetDetailsFailure.InvalidUpdate)
         UpdatePetFailure.NotFound -> raise(UpdatePetDetailsFailure.PetNotFound)
       }
     }
+  }
+
+  context(Raise<UpdatePetDetailsFailure.InvalidUpdate>)
+  private fun checkNamePolicy(name: String): Unit = ensure(name.isNotBlank()) {
+    UpdatePetDetailsFailure.InvalidUpdate
   }
 
   interface MicrochipStore {
@@ -48,7 +57,9 @@ class TaggedTypesPetService(
 
   interface PetStore {
     suspend fun getPet(petId: PetId): Pet?
-    suspend fun updatePet(petId: PetId, petUpdate: PetUpdate): Either<UpdatePetFailure, Pet>
+
+    context(Raise<UpdatePetFailure>)
+    suspend fun updatePet(petId: PetId, petUpdate: PetUpdate): Pet
   }
 
   data class PetUpdate(
@@ -70,6 +81,7 @@ class TaggedTypesPetService(
     object PetNotFound : UpdatePetDetailsFailure()
     object MicrochipNotFound : UpdatePetDetailsFailure()
     object InvalidMicrochip : UpdatePetDetailsFailure()
+    object OwnerMismatch : UpdatePetDetailsFailure()
     object InvalidUpdate : UpdatePetDetailsFailure()
   }
 }

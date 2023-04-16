@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement5
+package io.github.myuwono.petshop.requirement4
 
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
@@ -18,11 +18,9 @@ class ExceptionPetService(
 
   suspend fun updatePetDetails(
     petId: PetId,
-    petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
   ): Pet = try {
     val pet = petStore.getPet(petId)
-    val owner = petOwnerStore.getPetOwner(petOwnerId)
     val microchip = microchipStore.getMicrochip(pet.microchipId)
 
     if (microchip.petId != pet.id) {
@@ -33,7 +31,6 @@ class ExceptionPetService(
   } catch (ex: Throwable) {
     when (ex) {
       is PetNotFoundException -> throw UpdatePetDetailsException.PetNotFound(ex)
-      is PetOwnerNotFoundException -> throw UpdatePetDetailsException.OwnerNotFound(ex)
       is MicrochipNotFoundException -> throw UpdatePetDetailsException.MicrochipNotFound(ex)
       is CheckNameFailedException -> throw UpdatePetDetailsException.InvalidUpdate(ex)
       is UpdatePetException -> when (ex) {
@@ -81,7 +78,6 @@ class ExceptionPetService(
   }
 
   sealed class UpdatePetDetailsException : RuntimeException() {
-    data class OwnerNotFound(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class PetNotFound(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class MicrochipNotFound(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class InvalidMicrochip(override val cause: Throwable? = null) : UpdatePetDetailsException()

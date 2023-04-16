@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement5
+package io.github.myuwono.petshop.requirement7
 
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
@@ -29,6 +29,12 @@ class ExceptionPetService(
       throw UpdatePetDetailsException.InvalidMicrochip()
     }
 
+    if (microchip.petOwnerId != owner.id) {
+      throw UpdatePetDetailsException.OwnerMismatch()
+    }
+
+    petUpdate.name?.let { checkNamePolicy(it) }
+
     petStore.updatePet(petId, petUpdate)
   } catch (ex: Throwable) {
     when (ex) {
@@ -44,6 +50,8 @@ class ExceptionPetService(
       else -> throw ex
     }
   }
+
+  private fun checkNamePolicy(name: String): Unit = Unit
 
   data class CheckNameFailedException(override val cause: Throwable? = null) : RuntimeException()
 
@@ -85,6 +93,7 @@ class ExceptionPetService(
     data class PetNotFound(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class MicrochipNotFound(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class InvalidMicrochip(override val cause: Throwable? = null) : UpdatePetDetailsException()
+    data class OwnerMismatch(override val cause: Throwable? = null) : UpdatePetDetailsException()
     data class InvalidUpdate(override val cause: Throwable? = null) : UpdatePetDetailsException()
   }
 }

@@ -35,24 +35,15 @@ class SealedClassPetService(
           if (microchip.petId != pet.id) {
             UpdatePetDetailsResult.InvalidMicrochip
           } else {
-            if (microchip.petOwnerId != owner.id) {
-              UpdatePetDetailsResult.OwnerMismatch
-            } else {
-              when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
-                UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
-                UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
-                is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
-              }
+            when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
+              UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
+              UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
+              is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
             }
           }
         }
       }
     }
-  }
-
-  sealed class CheckNamePolicyResult {
-    object Success : CheckNamePolicyResult()
-    object Failure : CheckNamePolicyResult()
   }
 
   sealed class UpdatePetDetailsResult {
@@ -61,7 +52,6 @@ class SealedClassPetService(
     object PetNotFound : UpdatePetDetailsResult()
     object MicrochipNotFound : UpdatePetDetailsResult()
     object InvalidMicrochip : UpdatePetDetailsResult()
-    object OwnerMismatch : UpdatePetDetailsResult()
     object InvalidUpdate : UpdatePetDetailsResult()
   }
 

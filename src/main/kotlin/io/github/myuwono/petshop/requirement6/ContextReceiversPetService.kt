@@ -32,19 +32,12 @@ class ContextReceiversPetService(
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
-    petUpdate.name?.let { checkNamePolicy(it) }
-
     return recover({ petStore.updatePet(pet.id, petUpdate) }) { updatePetFailure ->
       when (updatePetFailure) {
         UpdatePetFailure.IllegalUpdate -> raise(UpdatePetDetailsFailure.InvalidUpdate)
         UpdatePetFailure.NotFound -> raise(UpdatePetDetailsFailure.PetNotFound)
       }
     }
-  }
-
-  context(Raise<UpdatePetDetailsFailure.InvalidUpdate>)
-  private fun checkNamePolicy(name: String): Unit = ensure(name.isNotBlank()) {
-    UpdatePetDetailsFailure.InvalidUpdate
   }
 
   interface MicrochipStore {

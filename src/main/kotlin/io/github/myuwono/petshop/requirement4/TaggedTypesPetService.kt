@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement5
+package io.github.myuwono.petshop.requirement4
 
 import arrow.core.Either
 import arrow.core.raise.either
@@ -29,6 +29,7 @@ class TaggedTypesPetService(
     val microchip = microchipStore.getMicrochip(pet.microchipId) ?: raise(UpdatePetDetailsFailure.MicrochipNotFound)
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
+    ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
     recover({ petStore.updatePet(pet.id, petUpdate).bind() }) { updatePetFailure ->
       when (updatePetFailure) {
@@ -70,6 +71,7 @@ class TaggedTypesPetService(
     object PetNotFound : UpdatePetDetailsFailure()
     object MicrochipNotFound : UpdatePetDetailsFailure()
     object InvalidMicrochip : UpdatePetDetailsFailure()
+    object OwnerMismatch : UpdatePetDetailsFailure()
     object InvalidUpdate : UpdatePetDetailsFailure()
   }
 }

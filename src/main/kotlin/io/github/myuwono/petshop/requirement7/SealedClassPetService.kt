@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement6
+package io.github.myuwono.petshop.requirement7
 
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
@@ -38,16 +38,31 @@ class SealedClassPetService(
             if (microchip.petOwnerId != owner.id) {
               UpdatePetDetailsResult.OwnerMismatch
             } else {
-              when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
-                UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
-                UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
-                is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
+              val checkNamePolicyResult = petUpdate.name
+                ?.let { checkNamePolicy(it) }
+                ?: CheckNamePolicyResult.Success
+
+              when (checkNamePolicyResult) {
+                CheckNamePolicyResult.Failure -> UpdatePetDetailsResult.InvalidUpdate
+                CheckNamePolicyResult.Success -> when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
+                  UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
+                  UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
+                  is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
+                }
               }
             }
           }
         }
       }
     }
+  }
+
+  private fun checkNamePolicy(name: String): CheckNamePolicyResult =
+    if (name.isNotBlank()) CheckNamePolicyResult.Success else CheckNamePolicyResult.Failure
+
+  sealed class CheckNamePolicyResult {
+    object Success : CheckNamePolicyResult()
+    object Failure : CheckNamePolicyResult()
   }
 
   sealed class UpdatePetDetailsResult {

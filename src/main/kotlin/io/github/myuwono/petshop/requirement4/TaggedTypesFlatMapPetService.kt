@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop.requirement5
+package io.github.myuwono.petshop.requirement4
 
 import arrow.core.Either
 import arrow.core.Option
@@ -29,21 +29,17 @@ class TaggedTypesFlatMapPetService(
     petStore.getPet(petId)
       .toEither { UpdatePetDetailsFailure.PetNotFound }
       .flatMap { pet ->
-        petOwnerStore.getPetOwner(petOwnerId)
-          .toEither { UpdatePetDetailsFailure.OwnerNotFound }
-          .flatMap { owner ->
-            microchipStore.getMicrochip(pet.microchipId)
-              .toEither { UpdatePetDetailsFailure.MicrochipNotFound }
-              .flatMap { microchip ->
-                run { if (microchip.petId == pet.id) Unit.right() else UpdatePetDetailsFailure.InvalidMicrochip.left() }
-                  .flatMap {
-                    petStore.updatePet(pet.id, petUpdate).mapLeft { updatePetFailure ->
-                      when (updatePetFailure) {
-                        UpdatePetFailure.IllegalUpdate -> UpdatePetDetailsFailure.InvalidUpdate
-                        UpdatePetFailure.NotFound -> UpdatePetDetailsFailure.PetNotFound
-                      }
-                    }
+        microchipStore.getMicrochip(pet.microchipId)
+          .toEither { UpdatePetDetailsFailure.MicrochipNotFound }
+          .flatMap { microchip ->
+            run { if (microchip.petId == pet.id) Unit.right() else UpdatePetDetailsFailure.InvalidMicrochip.left() }
+              .flatMap {
+                petStore.updatePet(pet.id, petUpdate).mapLeft { updatePetFailure ->
+                  when (updatePetFailure) {
+                    UpdatePetFailure.IllegalUpdate -> UpdatePetDetailsFailure.InvalidUpdate
+                    UpdatePetFailure.NotFound -> UpdatePetDetailsFailure.PetNotFound
                   }
+                }
               }
           }
       }
@@ -80,6 +76,7 @@ class TaggedTypesFlatMapPetService(
     object PetNotFound : UpdatePetDetailsFailure()
     object MicrochipNotFound : UpdatePetDetailsFailure()
     object InvalidMicrochip : UpdatePetDetailsFailure()
+    object OwnerMismatch : UpdatePetDetailsFailure()
     object InvalidUpdate : UpdatePetDetailsFailure()
   }
 }

@@ -3,6 +3,7 @@ package io.github.myuwono.petshop.requirement6
 import arrow.core.Either
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import arrow.core.raise.recover
 import io.github.myuwono.petshop.Microchip
 import io.github.myuwono.petshop.MicrochipId
 import io.github.myuwono.petshop.Pet
@@ -30,21 +31,11 @@ class TaggedTypesPetService(
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
 
-    petUpdate.name?.let { checkNamePolicy(it).bind() }
-
-    petStore.updatePet(pet.id, petUpdate)
-      .mapLeft { updatePetFailure ->
-        when (updatePetFailure) {
-          UpdatePetFailure.IllegalUpdate -> UpdatePetDetailsFailure.InvalidUpdate
-          UpdatePetFailure.NotFound -> UpdatePetDetailsFailure.PetNotFound
-        }
+    recover({ petStore.updatePet(pet.id, petUpdate).bind() }) { updatePetFailure ->
+      when (updatePetFailure) {
+        UpdatePetFailure.IllegalUpdate -> raise(UpdatePetDetailsFailure.InvalidUpdate)
+        UpdatePetFailure.NotFound -> raise(UpdatePetDetailsFailure.PetNotFound)
       }
-      .bind()
-  }
-
-  private fun checkNamePolicy(name: String): Either<UpdatePetDetailsFailure, Unit> = either {
-    ensure(name.isNotBlank()) {
-      UpdatePetDetailsFailure.InvalidUpdate
     }
   }
 

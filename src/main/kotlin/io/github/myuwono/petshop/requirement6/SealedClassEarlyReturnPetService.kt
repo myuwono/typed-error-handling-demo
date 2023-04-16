@@ -32,26 +32,11 @@ class SealedClassEarlyReturnPetService(
       return UpdatePetDetailsResult.OwnerMismatch
     }
 
-    petUpdate.name?.let { name ->
-      when (checkNamePolicy(name)) {
-        CheckNamePolicyResult.Failure -> return UpdatePetDetailsResult.InvalidUpdate
-        CheckNamePolicyResult.Success -> Unit
-      }
-    }
-
     return when (val updateResult = petStore.updatePet(pet.id, petUpdate)) {
       UpdatePetResult.IllegalUpdate -> UpdatePetDetailsResult.InvalidUpdate
       UpdatePetResult.NotFound -> UpdatePetDetailsResult.PetNotFound
       is UpdatePetResult.Updated -> UpdatePetDetailsResult.Success(updateResult.pet)
     }
-  }
-
-  private fun checkNamePolicy(name: String): CheckNamePolicyResult =
-    if (name.isNotBlank()) CheckNamePolicyResult.Success else CheckNamePolicyResult.Failure
-
-  sealed class CheckNamePolicyResult {
-    object Success : CheckNamePolicyResult()
-    object Failure : CheckNamePolicyResult()
   }
 
   sealed class UpdatePetDetailsResult {

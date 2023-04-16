@@ -33,8 +33,6 @@ class ExceptionPetService(
       throw UpdatePetDetailsException.OwnerMismatch()
     }
 
-    petUpdate.name?.let { checkNamePolicy(it) }
-
     petStore.updatePet(petId, petUpdate)
   } catch (ex: Throwable) {
     when (ex) {
@@ -50,8 +48,6 @@ class ExceptionPetService(
       else -> throw ex
     }
   }
-
-  private fun checkNamePolicy(name: String): Unit = Unit
 
   data class CheckNameFailedException(override val cause: Throwable? = null) : RuntimeException()
 
