@@ -1,4 +1,4 @@
-package io.github.myuwono.petshop
+package io.github.myuwono.petshop.requirement6
 
 import arrow.core.Either
 import arrow.core.Option
@@ -6,6 +6,14 @@ import arrow.core.getOrElse
 import arrow.core.none
 import arrow.core.raise.either
 import arrow.core.raise.ensure
+import io.github.myuwono.petshop.Microchip
+import io.github.myuwono.petshop.MicrochipId
+import io.github.myuwono.petshop.Pet
+import io.github.myuwono.petshop.PetGender
+import io.github.myuwono.petshop.PetId
+import io.github.myuwono.petshop.PetOwner
+import io.github.myuwono.petshop.PetOwnerId
+import io.github.myuwono.petshop.PetType
 import java.time.LocalDate
 
 class TaggedTypesPetService(
@@ -21,7 +29,8 @@ class TaggedTypesPetService(
     val pet = petStore.getPet(petId).getOrElse { raise(UpdatePetDetailsFailure.PetNotFound) }
 
     val owner = petOwnerStore.getPetOwner(petOwnerId).getOrElse { raise(UpdatePetDetailsFailure.OwnerNotFound) }
-    val microchip = microchipStore.getMicrochip(pet.microchipId).getOrElse { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
+    val microchip =
+      microchipStore.getMicrochip(pet.microchipId).getOrElse { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }

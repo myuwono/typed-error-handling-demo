@@ -1,5 +1,13 @@
-package io.github.myuwono.petshop
+package io.github.myuwono.petshop.requirement6
 
+import io.github.myuwono.petshop.Microchip
+import io.github.myuwono.petshop.MicrochipId
+import io.github.myuwono.petshop.Pet
+import io.github.myuwono.petshop.PetGender
+import io.github.myuwono.petshop.PetId
+import io.github.myuwono.petshop.PetOwner
+import io.github.myuwono.petshop.PetOwnerId
+import io.github.myuwono.petshop.PetType
 import java.time.LocalDate
 
 class ExceptionPetService(
