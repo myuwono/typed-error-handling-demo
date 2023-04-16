@@ -1,8 +1,5 @@
 package io.github.myuwono.petshop.requirement5
 
-import arrow.core.None
-import arrow.core.Option
-import arrow.core.none
 import arrow.core.raise.Raise
 import arrow.core.raise.ensure
 import arrow.core.raise.recover
@@ -28,9 +25,9 @@ class ContextReceiversPetService(
     petOwnerId: PetOwnerId,
     petUpdate: PetUpdate
   ): Pet {
-    val pet = recover({ petStore.getPet(petId) }) { raise(UpdatePetDetailsFailure.PetNotFound) }
-    val owner = recover({ petOwnerStore.getPetOwner(petOwnerId) }) { raise(UpdatePetDetailsFailure.OwnerNotFound) }
-    val microchip = recover({ microchipStore.getMicrochip(pet.microchipId) }) { raise(UpdatePetDetailsFailure.MicrochipNotFound) }
+    val pet = petStore.getPet(petId) ?: raise(UpdatePetDetailsFailure.PetNotFound)
+    val owner = petOwnerStore.getPetOwner(petOwnerId) ?: raise(UpdatePetDetailsFailure.OwnerNotFound)
+    val microchip = microchipStore.getMicrochip(pet.microchipId) ?: raise(UpdatePetDetailsFailure.MicrochipNotFound)
 
     ensure(microchip.petId == pet.id) { UpdatePetDetailsFailure.InvalidMicrochip }
     ensure(microchip.petOwnerId == owner.id) { UpdatePetDetailsFailure.OwnerMismatch }
@@ -44,30 +41,27 @@ class ContextReceiversPetService(
   }
 
   interface MicrochipStore {
-    context(Raise<None>)
-    suspend fun getMicrochip(microchipId: MicrochipId): Microchip
+    suspend fun getMicrochip(microchipId: MicrochipId): Microchip?
   }
 
   interface PetOwnerStore {
-    context(Raise<None>)
-    suspend fun getPetOwner(petOwnerId: PetOwnerId): PetOwner
+    suspend fun getPetOwner(petOwnerId: PetOwnerId): PetOwner?
   }
 
   interface PetStore {
-    context(Raise<None>)
-    suspend fun getPet(petId: PetId): Pet
+    suspend fun getPet(petId: PetId): Pet?
 
     context(Raise<UpdatePetFailure>)
     suspend fun updatePet(petId: PetId, petUpdate: PetUpdate): Pet
   }
 
   data class PetUpdate(
-    val microchipId: Option<MicrochipId> = none(),
-    val name: Option<String> = none(),
-    val birthDate: Option<LocalDate> = none(),
-    val petType: Option<PetType> = none(),
-    val breed: Option<String> = none(),
-    val gender: Option<PetGender> = none()
+    val microchipId: MicrochipId? = null,
+    val name: String? = null,
+    val birthDate: LocalDate? = null,
+    val petType: PetType? = null,
+    val breed: String? = null,
+    val gender: PetGender? = null
   )
 
   sealed class UpdatePetFailure {
